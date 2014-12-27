@@ -1,0 +1,13 @@
+{application, img_proc,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  erl_img
+                 ]},
+  {mod, { img_proc_app, []}},
+  {env, []}
+ ]}.
