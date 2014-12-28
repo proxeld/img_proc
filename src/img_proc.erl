@@ -1,27 +1,48 @@
 -module(img_proc).
--compile([export_all]).
-% include records definition
--include_lib("erl_img/include/erl_img.hrl").
+-export([load/1, save/1, save/2, test/0, filterGauss/1]).
+-include("deps/erl_img/include/erl_img.hrl").
+-include("img_proc.hrl").
+%**************************************
+% Main module with image processing API
+%**************************************
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Loads image by given path
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% [Char] => {atom, #erl_image}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 load(Path) ->
 	erl_img:load(Path).
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Saves image 
-%  Uses the same path it was read from
+%% Uses the same path it was read from
+%% #erl_image => atom.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-save(Img) ->
-	erl_img:save(Img).
+save(ErlImg) ->
+	erl_img:save(ErlImg).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Saves image according with 
-%  a given path 
+%% a given path 
+%% #erl_image -> [Char] => atom.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-save(Img, Path) ->
-	NewImg = Img#erl_image{filename=Path},
+save(ErlImg, Path) ->
+	NewImg = ErlImg#erl_image{filename=Path},
 	erl_img:save(NewImg).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Filters image with gaussian mask
+%% #erl_image => #erl_image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+filterGauss(ErlImg) ->
+	filters:gauss(ErlImg).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Used for testing purpose
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+test() ->
+	{_, ErlImg} = load("priv/lenaSzum.png"),
+	Lena = filterGauss(ErlImg),
+	save(Lena, "./newlena.png").
