@@ -1,32 +1,39 @@
 Getting started
 ===============
 
-Download dependencies
+#####Download dependencies
+
 	make update
 
-Compile project
+#####Compile project
+
 	make compile
 or simply 
+
 	make
  
-Run shell with loaded libraries
+#####Run shell with loaded libraries
+
 	make start
 
-Loading image (in erlang shell)
-	img_proc:load("priv/g3.png").
+#####Loading image (in erlang shell)
 
-Starting OTP app - not neccessary for now
-	application:start(crypto).
-	pplication:start(erl_img).
-	application:start(img_proc).
+	img_proc:load("priv/lena.png").
 
+#####Saving image
+	img_proc:save(Img, "path/to/new/img.png").
+	
+#####Filtering
+	img_proc:filterGauss(Img).
 
 TIPS
 ----
 
-Pretty record displaying enabling
+#####Pretty record displaying enabling (in erlang shell)
+
 	rr(img_proc).
-Unbound variable
+#####Unbound variable
+
 	f(A).
 
 KNOWN BUGS
