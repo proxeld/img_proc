@@ -1,5 +1,5 @@
 -module(filters).
--export([strel/1, conv/2, gauss/1]).
+-export([strel/1, conv/2, gauss/1, average/1]).
 -include("deps/erl_img/include/erl_img.hrl").
 -include("img_proc.hrl").
 %*************************************
@@ -12,15 +12,20 @@
 %% atom => [[Num]]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 strel(Type) ->
+	M = 
 	case Type of
 		gauss -> 	
-			M = 
 			 [[1,2,1],
 			 [2,4,2],
-			 [1,2,1]],
-			[[E/lists:sum(lists:flatten(M)) || E <- R] || R <- M];
+			 [1,2,1]];
+		average ->
+			 [[1,1,1],
+			 [1,1,1],
+			 [1,1,1]];
 		_ -> throw({badarg, "There is now structural element of this type"})
-	end.
+	end,
+
+	[[E/lists:sum(lists:flatten(M)) || E <- R] || R <- M].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Executes convolution
@@ -73,4 +78,14 @@ extractNeighbours(Image, Row, Col) ->
 gauss(ErlImg) ->
 	Image = utils:erlImgToImage(ErlImg),
 	Res = filters:conv(Image#image.matrix, filters:strel(gauss)),
+	utils:synchronizeImg(ErlImg, Image#image{matrix=Res}).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Filters image with average mask
+%% #erl_image => #erl_image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+average(ErlImg) ->
+	Image = utils:erlImgToImage(ErlImg),
+	Res = filters:conv(Image#image.matrix, filters:strel(average)),
 	utils:synchronizeImg(ErlImg, Image#image{matrix=Res}).

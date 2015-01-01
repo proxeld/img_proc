@@ -25,7 +25,7 @@ getPixel(Matrix, Row, Column) ->
 
 	Width = len(Line),
 	if 
-		Column > Width orelse Column < 1->
+		Column > Width orelse Column < 1 ->
 			throw({outofrange, "Index is out of range"});
 		true ->
 			lists:nth(Column, Line)
@@ -106,9 +106,7 @@ synchronizeImg(ErlImg, Img) ->
 	Pxs = case Img#image.format of
 		gray8 ->
 			Rows = lists:zip(
-						lists:reverse(
-							lists:seq(0,ErlImg#erl_image.height-1)
-						),
+						lists:seq(0,ErlImg#erl_image.height-1),
 						Img#image.matrix
 					),
 			[{Nr, binary:list_to_bin(Row)} || {Nr, Row} <- Rows];
