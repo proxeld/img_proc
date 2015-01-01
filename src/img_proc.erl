@@ -1,5 +1,6 @@
 -module(img_proc).
--export([load/1, save/1, save/2, test/0, filterGauss/1, filterAverage/1]).
+-export([load/1, save/1, save/2, test/0, test2/0, 
+	filterGauss/1, filterAverage/1, filterMean/1]).
 -include("deps/erl_img/include/erl_img.hrl").
 -include("img_proc.hrl").
 %**************************************
@@ -47,9 +48,24 @@ filterAverage(ErlImg) ->
 	filters:average(ErlImg).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Filters image by not linear mean filter
+%% #erl_image => #erl_image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+filterMean(ErlImg) ->
+	filters:mean(ErlImg).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Used for testing purpose
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 test() ->
+	{_, ErlImg} = load("priv/lenaSzum.png"),
+	Lena = filterMean(ErlImg),
+	save(Lena, "./result.png").
+
+test2() -> 
 	{_, ErlImg} = load("priv/lenaSzum256.png"),
-	Lena = filterAverage(ErlImg),
-	save(Lena, "./tmp_lena.png").
+	Img = utils:erlImgToImage(ErlImg),
+	{Li, Ma} = Img#image.matrix,
+	time:avg(utils, getPixel, [Li, 255, 255], 512*512),
+	io:format("--------------~n"),
+	time:avg(utils, getPx, [Ma, 255, 255], 512*512).

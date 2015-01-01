@@ -1,6 +1,6 @@
 -module(utils).
--export([getPixel/3, len/1, avg/1, muliplyM/2, muliplyL/2, 
-	erlImgToImage/1, synchronizeImg/2, print/1]).
+-export([getPixel/3, getPx/3, len/1, array_len/1, erlImgToImage/1,
+	synchronizeImg/2, bin_to_array/1, print/1]).
 -include("deps/erl_img/include/erl_img.hrl").
 -include("img_proc.hrl").
 %*************************************
@@ -11,6 +11,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Extract one element from the list
 %% of lists
+%% May be faster - pass size of matrix
+%% in arguments
 %% [[X]] -> Integer -> Integer => X
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 getPixel(Matrix, Row, Column) ->
@@ -31,6 +33,22 @@ getPixel(Matrix, Row, Column) ->
 			lists:nth(Column, Line)
 	end.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Extract one element from the 
+%% two-dimentional array
+%% #image -> Integer -> Integer => X
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+getPx(Image, Row, Column) ->
+	Width = Image#image.width,
+	Height = Image#image.height,
+	Array2D = Image#image.matrix,
+
+	if
+		Row >= Height orelse Row < 0 orelse Column >= Width orelse Column < 0 ->
+			throw({outofrange, "Index is out of range"});
+		true ->	
+			array:get(Column, array:get(Row, Array2D))
+	end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Length of the list
@@ -40,34 +58,38 @@ len(L) -> len(L,0).
 len([], Acc) -> Acc;
 len([_|T], Acc) -> len(T,Acc+1).
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Average of values from list
-%% [Num] => Integer
+%% Length of the array
+%% WARNING: Slows down computations
+%% array => Integer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-avg(List) ->
-	lists:sum(List)/lists:flatlength(List).
+array_len(Array) -> 
+	length(array:to_list(Array)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Multiplies two matrixes of the same
-%% size
-%% [[Num]] -> [[Num]] => [[Num]]
+%% Converts binary to array
+%% <<X/bajt,T/binary>> => array of X
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-muliplyM(M1, M2) ->
-	muliplyh(M1, M2, []).
-muliplyh([], [], Acc) -> 
+bin_to_array(Binary) ->
+	bin_to_array(Binary, 0, array:new()).
+bin_to_array(<<>>, _, Acc) ->
 	Acc;
-muliplyh([H1|T1], [H2|T2], Acc) ->
-	% io:format("Row1: ~p~nRow2: ~p~n", [H1, H2]),
-	NewAcc = lists:append(Acc, [muliplyL(H1,H2)]),
-	muliplyh(T1,T2, NewAcc).
+bin_to_array(<<H,T/binary>>, Idx, Acc) ->
+	NewAcc = array:set(Idx, H, Acc),
+	bin_to_array(T, Idx+1, NewAcc).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Multiplies two lists
-%% [Num] -> [Num] => [Num]
+%% Converts list to array
+%% [X] -> => array of X
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-muliplyL(V1, V2) ->
-	lists:zipwith(fun(A,B)->A*B end, V1, V2).
-
+list_to_array(List) ->
+	list_to_array(List, 0, array:new()).
+list_to_array([], _, Acc) ->
+	Acc;
+list_to_array([H|T], Idx, Acc) ->
+	NewAcc = array:set(Idx, H, Acc),
+	list_to_array(T, Idx+1, NewAcc).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Converts #erl_image to record #image
@@ -80,13 +102,21 @@ erlImgToImage(Img) ->
 
 	Mx = case Img#erl_image.format of
 		gray8 ->
-			[binary:bin_to_list(Bajts) || {_, Bajts} <- Pixels ];
+			% list of lists: 
+			% L = [binary:bin_to_list(Bajts) || {_, Bajts} <- Pixels ],
+			L = [bin_to_array(Bajts) || {_, Bajts} <- Pixels ],
+			list_to_array(L);
 		r8g8b8 ->
+			% list of lists: 
 			Matrix = [binary:bin_to_list(Bajts) || {_, Bajts} <- Pixels],
-			[rowToRGB(Row) || Row <- Matrix];
+			LofL = [rowToRGB(Row) || Row <- Matrix],
+			LofA = [list_to_array(List) || List <- LofL],
+			list_to_array(LofA);
 		r8g8b8a8 ->
 			Matrix = [binary:bin_to_list(Bajts) || {_, Bajts} <- Pixels],
-			[rowToRGBA(Row) || Row <- Matrix];
+			LofL = [rowToRGBA(Row) || Row <- Matrix],
+			LofA = [list_to_array(List) || List <- LofL],
+			list_to_array(LofA);
 		_ ->
 			throw({error, "Image format not supported", Img#erl_image.format})
 	end,
