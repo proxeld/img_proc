@@ -13,5 +13,6 @@ start:
 
 clean: 
 	@$(REBAR) clean
+	rm -rf *.beam
 
 .PHONY: clean

@@ -1,5 +1,5 @@
 -module(filters).
--export([strel/1, conv/2, gauss/1, average/1, mean/1]).
+-export([strel/1, conv/2, gauss/1, average/1, mean/1, meanFl/1, meanConcurrent/1, meanConcurrentRow/2]).
 -include("deps/erl_img/include/erl_img.hrl").
 -include("img_proc.hrl").
 %*************************************
@@ -144,6 +144,51 @@ meanRow(Image, Row, Acc) ->
 	end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Mean concurrent filtering logic
+%% #image => [[Num]]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+meanConcurrent(Image) ->
+	Workers = [spawn(?MODULE, meanConcurrentRow, [Image, Row]) 
+				|| 
+			   Row <- lists:seq(0, Image#image.height-1)],
+	% spawn workers
+	[Worker ! {self(), start} || Worker <- Workers],
+	% here we have in Rows computed data, but not sorted
+	Rows = meanSupervisor(Image#image.height, []),
+	Sorted = lists:sort(Rows),
+	{_, ImageData} = lists:unzip(Sorted),
+	ImageData.
+	% io:format("After concurrent computing: ~p~n", [ImageData]).
+meanConcurrentRow(Image, Row) ->
+	receive
+		{From, start} ->
+			From ! {Row, [
+						round(
+							math:median(extractNeighbours(Image, Row, Col))
+						)
+						||
+						Col <- lists:seq(0, Image#image.width-1)
+					]};
+		{From, _} ->
+			From ! {erorr, "Wrong message. Try again if you wish."},
+			meanConcurrentRow(Image, Row);
+		_ ->
+			meanConcurrentRow(Image, Row)
+	end.
+meanSupervisor(Remained, Acc) ->
+	receive
+		{RowNr, ComputedRow} when is_list(ComputedRow) ->
+			case Remained of
+				1 -> [{RowNr, ComputedRow}|Acc];
+				_ ->
+					% io:format("Recived row: ~p~n", [{RowNr, ComputedRow}]), 
+					meanSupervisor(Remained-1, [{RowNr, ComputedRow}|Acc])
+			end;
+		_ -> 
+			throw({bad_arg, "Argument should be a list"})
+	end.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Filters image with gaussian mask
 %% #erl_image => #erl_image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -168,5 +213,5 @@ average(ErlImg) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 mean(ErlImg) ->
 	Image = utils:erlImgToImage(ErlImg),
-	Res = meanFl(Image),
+	Res = meanConcurrent(Image),
 	utils:synchronizeImg(ErlImg, Image#image{matrix=Res}).
