@@ -39,7 +39,7 @@ convrow(Image, SE, Row, Acc) ->
 		[
 			round(
 				lists:sum(
-					utils:muliplyL(extractNeighbours(Image, Row, Col), lists:flatten(SE))
+					math:muliplyL(extractNeighbours(Image, Row, Col), lists:flatten(SE))
 				)
 			)
 
@@ -63,7 +63,7 @@ convrow(Image, SE, Row, Acc) ->
 % 		[
 % 			round(
 % 				lists:sum(
-% 					utils:muliplyL(extractNeighbours(Image, Row, Col), lists:flatten(SE))
+% 					math:muliplyL(extractNeighbours(Image, Row, Col), lists:flatten(SE))
 % 				)
 % 			)
 % 			||

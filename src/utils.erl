@@ -1,6 +1,6 @@
 -module(utils).
 -export([getPixel/3, getPx/3, len/1, array_len/1, erlImgToImage/1,
-	synchronizeImg/2, bin_to_array/1, print/1]).
+	synchronizeImg/2, merge/2, bin_to_array/1, every_snd/1, print/1]).
 -include("deps/erl_img/include/erl_img.hrl").
 -include("img_proc.hrl").
 %*************************************
@@ -67,6 +67,20 @@ len([_|T], Acc) -> len(T,Acc+1).
 array_len(Array) -> 
 	length(array:to_list(Array)).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Merges two lists taking head from
+%% first list, head from second and 
+%% snd element from frist, snd element
+%% from snd list and so on
+%% [X] -> [X] => [X]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+merge([], Rest) ->
+	Rest;
+merge(Rest, []) ->
+	Rest;
+merge([H1|T1], [H2|T2]) ->
+	[H1,H2|merge(T1,T2)].
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Converts binary to array
 %% <<X/bajt,T/binary>> => array of X
@@ -81,7 +95,7 @@ bin_to_array(<<H,T/binary>>, Idx, Acc) ->
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Converts list to array
-%% [X] -> => array of X
+%% [X] => array of X
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 list_to_array(List) ->
 	list_to_array(List, 0, array:new()).
@@ -90,6 +104,18 @@ list_to_array([], _, Acc) ->
 list_to_array([H|T], Idx, Acc) ->
 	NewAcc = array:set(Idx, H, Acc),
 	list_to_array(T, Idx+1, NewAcc).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Takes every second element from list
+%% starting with first
+%% [X] => [X]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+every_snd([]) ->
+	[];
+every_snd([H]) ->
+	[H];
+every_snd([H1,_|T]) ->
+	[H1] ++ every_snd(T).	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Converts #erl_image to record #image
@@ -105,25 +131,36 @@ erlImgToImage(Img) ->
 			% list of lists: 
 			% L = [binary:bin_to_list(Bajts) || {_, Bajts} <- Pixels ],
 			L = [bin_to_array(Bajts) || {_, Bajts} <- Pixels ],
+			Alpha = [],
 			list_to_array(L);
+		gray8a8 ->
+			% just ignore transparency
+			LofL = [binary:bin_to_list(Bajts) || {_, Bajts} <- Pixels ],
+			LofA = [list_to_array(every_snd(List)) || List <- LofL],
+			Alpha = [every_snd(T) || [_|T] <- LofL],
+			list_to_array(LofA);
 		r8g8b8 ->
 			% list of lists: 
 			Matrix = [binary:bin_to_list(Bajts) || {_, Bajts} <- Pixels],
 			LofL = [rowToRGB(Row) || Row <- Matrix],
 			LofA = [list_to_array(List) || List <- LofL],
+			Alpha = [],
 			list_to_array(LofA);
 		r8g8b8a8 ->
 			Matrix = [binary:bin_to_list(Bajts) || {_, Bajts} <- Pixels],
 			LofL = [rowToRGBA(Row) || Row <- Matrix],
 			LofA = [list_to_array(List) || List <- LofL],
+			Alpha = [],
 			list_to_array(LofA);
 		_ ->
+			Alpha = [],
 			throw({error, "Image format not supported", Img#erl_image.format})
 	end,
 
 	#image{format=Img#erl_image.format,
 		width=Img#erl_image.width,
 		height=Img#erl_image.height,
+		alpha=Alpha,
 		matrix=Mx}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -140,12 +177,22 @@ synchronizeImg(ErlImg, Img) ->
 						Img#image.matrix
 					),
 			[{Nr, binary:list_to_bin(Row)} || {Nr, Row} <- Rows];
+		gray8a8 ->
+			% merge image matrix with transparency channel
+			Rows = lists:zip(
+						lists:seq(0,ErlImg#erl_image.height-1),
+						Img#image.matrix
+					),
+			WithAlpha = 
+				[{Nr, merge(Row, lists:nth(Nr+1, Img#image.alpha))} 
+					|| {Nr, Row} <- Rows],
+			[{Nr, binary:list_to_bin(Row)} || {Nr, Row} <- WithAlpha];
 		r8g8b8 ->
 			todo;
 		r8g8b8a8 ->
 			todo;
 		_ ->
-			throw({error, "Image format not supported", Img#erl_image.format})
+			throw({error, "Image format not supported", Img#image.format})
 	end,
 	%io:format("Pixmap to synchronize:~p~n", [Pxs]),
 	Pixmap = lists:nth(1, ErlImg#erl_image.pixmaps),

@@ -58,7 +58,7 @@ filterMean(ErlImg) ->
 %% Used for testing purpose
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 test() ->
-	{_, ErlImg} = load("priv/lenaSzum.png"),
+	{_, ErlImg} = load("priv/island.png"),
 	Lena = filterMean(ErlImg),
 	save(Lena, "./result.png").
 
