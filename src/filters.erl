@@ -1,7 +1,10 @@
 -module(filters).
--export([strel/1, conv/2, gauss/1, average/1, mean/1, meanFl/1, meanConcurrent/1, meanConcurrentRow/2]).
 -include("deps/erl_img/include/erl_img.hrl").
 -include("img_proc.hrl").
+-export([strel/1, conv/2, gauss/1, process_image_with_mask/2,
+	average/1, median/1, min/1, max/1, erode/1, dilate/1,
+	open/1, close/1]).
+
 %*************************************
 % Module for contextual operations
 %*************************************
@@ -9,6 +12,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Returns structural element
+%% It's already normalized
 %% atom => [[Num]]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 strel(Type) ->
@@ -31,15 +35,14 @@ strel(Type) ->
 %% #image -> array of arrays => [[Num]]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 conv(Image, SE) ->
-	convrow(Image, SE, 0, []).
-
-convrow(Image, SE, Row, Acc) ->
+	conv_row(Image, SE, 0, []).
+conv_row(Image, SE, Row, Acc) ->
 
 	ComputedRow = 
 		[
 			round(
 				lists:sum(
-					math:muliplyL(extractNeighbours(Image, Row, Col), lists:flatten(SE))
+					math:muliply_lists(utils:extract_neighbours_from_array(Image, Row, Col), lists:flatten(SE))
 				)
 			)
 
@@ -52,18 +55,26 @@ convrow(Image, SE, Row, Acc) ->
 	Rows = Image#image.height,
 	if
 		Row <  Rows ->
-			convrow(Image, SE, Row+1, lists:append(Acc, [ComputedRow]));
+			conv_row(Image, SE, Row+1, lists:append(Acc, [ComputedRow]));
 		true ->
 			Acc
 	end.
 
-%% For the version with lists, not arrays
-% convrow(Image, SE, Row, Acc) ->
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Executes convolution
+%% Image matrix data have to be list 
+%% of lists.
+%% Significantly slower
+%% #image -> array of arrays => [[Num]]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% conv(Image, SE) ->
+% 	conv_row(Image, SE, 0, []).
+% conv_row(Image, SE, Row, Acc) ->
 % 	ComputedRow = 
 % 		[
 % 			round(
 % 				lists:sum(
-% 					math:muliplyL(extractNeighbours(Image, Row, Col), lists:flatten(SE))
+% 					math:muliplyL(utils:extract_neighbours_from_list(Image, Row, Col), lists:flatten(SE))
 % 				)
 % 			)
 % 			||
@@ -73,145 +84,152 @@ convrow(Image, SE, Row, Acc) ->
 % 	Rows = utils:len(Image),
 % 	if
 % 		Row =<  Rows ->
-% 			convrow(Image, SE, Row+1, lists:append(Acc, [ComputedRow]));
+% 			conv_row(Image, SE, Row+1, lists:append(Acc, [ComputedRow]));
 % 		true ->
 % 			Acc
 % 	end.
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Extract 9 neighbours from image
-%% given certain position
-%% #image -> Num -> Num => [Num]
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-extractNeighbours(Image, Row, Col) -> 
-	% io:format("Extracting neighbourhood for row ~p, col ~p~n", [Row, Col]),
-	N =
-	[
-		% getPx method is critical here - it has to be fast!
-		try utils:getPx(Image, Row+R, Col+C) of			
-			Val ->
-				% io:format("~p ~p~n", [Row+R, Col+C]),
-				Val
-		catch
-			throw:{outofrange, _} -> 
-				% io:format("Exception catched ~p ~p~n", [Row+R, Col+C]),
-				% zeros out of boumdaries
-				0
-		end
-		|| R <- [-1,0,1], C <- [-1,0,1]
-	],
-	% io:format("neighbourhood: ~p~n", [N]),
-	N.	
-
-%% For the version with lists, not arrays
-% extractNeighbours(Image, Row, Col) -> 
-% 	N =
-% 	[
-% 		try utils:getPixel(Image, Row+R, Col+C) of
-% 			Val -> Val
-% 		catch
-% 			throw:{outofrange, _} -> 0
-% 		end
-% 		|| R <- [-1,0,1], C <- [-1,0,1]
-% 	],
-% 	% io:format("neighbourhood: ~p~n", [N]),
-% 	N.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Mean filtering logic
-%% #image => [[Num]]
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-meanFl(Image) ->
-	meanRow(Image, 0, []).
-meanRow(Image, Row, Acc) ->
-	ComputedRow = 
-		[
-			round(
-				math:median(extractNeighbours(Image, Row, Col))
-			)
-
-			||
-
-			Col <- lists:seq(0, Image#image.width-1)
-		],
-	Rows = Image#image.height,
-	if
-		Row <  Rows ->
-			meanRow(Image, Row+1, lists:append(Acc, [ComputedRow]));
-		true ->
-			Acc
-	end.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Mean concurrent filtering logic
-%% #image => [[Num]]
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-meanConcurrent(Image) ->
-	Workers = [spawn(?MODULE, meanConcurrentRow, [Image, Row]) 
-				|| 
-			   Row <- lists:seq(0, Image#image.height-1)],
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% General function for concurrent image 
+%% proc. with some kind of operation on mask
+%% #image -> ([Num] -> Integer) => [[Num]]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+process_image_with_mask(Image, Fn) ->
+	Height = Image#image.height,
+	MasterPid = self(),
+	% spawn supervisor
+	Supervisor = 
+		spawn(fun() -> process_image_with_mask_supervisor(MasterPid, Height, []) end),
 	% spawn workers
-	[Worker ! {self(), start} || Worker <- Workers],
-	% here we have in Rows computed data, but not sorted
-	Rows = meanSupervisor(Image#image.height, []),
-	Sorted = lists:sort(Rows),
-	{_, ImageData} = lists:unzip(Sorted),
-	ImageData.
-	% io:format("After concurrent computing: ~p~n", [ImageData]).
-meanConcurrentRow(Image, Row) ->
+	Workers = [
+				spawn(fun() -> process_row_with_mask(Image, Row, Fn) end) 
+				  || 
+			    Row <- lists:seq(0, Height-1)
+			  ],
+	% send signal to start processing
+	[Worker ! {Supervisor, start} || Worker <- Workers],
+	receive
+		{result, ImageMatrix} ->
+			ImageMatrix;
+		_ ->
+			throw({result_lost, "Result not matched to receive"})
+	end.
+process_row_with_mask(Image, Row, Fn) ->
+	Width = Image#image.width,
 	receive
 		{From, start} ->
 			From ! {Row, [
-						round(
-							math:median(extractNeighbours(Image, Row, Col))
-						)
+						Fn(utils:extract_neighbours_from_array(Image, Row, Col))
 						||
-						Col <- lists:seq(0, Image#image.width-1)
+						Col <- lists:seq(0, Width-1)
 					]};
 		{From, _} ->
 			From ! {erorr, "Wrong message. Try again if you wish."},
-			meanConcurrentRow(Image, Row);
+			process_row_with_mask(Image, Row, Fn);
 		_ ->
-			meanConcurrentRow(Image, Row)
+			process_row_with_mask(Image, Row, Fn)
 	end.
-meanSupervisor(Remained, Acc) ->
+process_image_with_mask_supervisor(Parent, Remained, Acc) ->
 	receive
 		{RowNr, ComputedRow} when is_list(ComputedRow) ->
 			case Remained of
-				1 -> [{RowNr, ComputedRow}|Acc];
+				1 -> 
+					Result = [{RowNr, ComputedRow}|Acc],
+					{_, ImageMatrix} = lists:unzip(lists:sort(Result)),
+					Parent ! {result, ImageMatrix},
+					ok;
 				_ ->
 					% io:format("Recived row: ~p~n", [{RowNr, ComputedRow}]), 
-					meanSupervisor(Remained-1, [{RowNr, ComputedRow}|Acc])
+					process_image_with_mask_supervisor(Parent, Remained-1, [{RowNr, ComputedRow}|Acc])
 			end;
 		_ -> 
 			throw({bad_arg, "Argument should be a list"})
-	end.
+	end. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Filters image with gaussian mask
 %% #erl_image => #erl_image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 gauss(ErlImg) ->
-	Image = utils:erlImgToImage(ErlImg),
+	Image = utils:erl_img_to_image(ErlImg),
 	Res = filters:conv(Image, filters:strel(gauss)),
-	utils:synchronizeImg(ErlImg, Image#image{matrix=Res}).
-
+	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Filters image with average mask
 %% #erl_image => #erl_image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 average(ErlImg) ->
-	Image = utils:erlImgToImage(ErlImg),
+	Image = utils:erl_img_to_image(ErlImg),
 	Res = filters:conv(Image, filters:strel(average)),
-	utils:synchronizeImg(ErlImg, Image#image{matrix=Res}).
+	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Filters image with average mask
+%% Filters image - midian filter
 %% #erl_image => #erl_image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-mean(ErlImg) ->
-	Image = utils:erlImgToImage(ErlImg),
-	Res = meanConcurrent(Image),
-	utils:synchronizeImg(ErlImg, Image#image{matrix=Res}).
+median(ErlImg) ->
+	Image = utils:erl_img_to_image(ErlImg),
+	Res = process_image_with_mask
+		(
+			Image, 
+			fun(L) -> round(math:median(L)) end
+		),
+	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Filters image - min filter
+%% #erl_image => #erl_image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+min(ErlImg) ->
+	Image = utils:erl_img_to_image(ErlImg),
+	Res = process_image_with_mask
+		(
+			Image, 
+			fun(L) -> round(lists:min(L)) end
+		),
+	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Filters image - max filter
+%% #erl_image => #erl_image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+max(ErlImg) ->
+	Image = utils:erl_img_to_image(ErlImg),
+	Res = process_image_with_mask
+		(
+			Image, 
+			fun(L) -> round(lists:max(L)) end
+		),
+	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Erosion operation
+%% #erl_image => #erl_image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+erode(ErlImg) ->
+	min(ErlImg).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Dilatation operation
+%% #erl_image => #erl_image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dilate(ErlImg) ->
+	max(ErlImg).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Opening image operation
+%% #erl_image => #erl_image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+open(ErlImg) ->
+	dilate(erode(ErlImg)).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Closing image operation
+%% #erl_image => #erl_image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+close(ErlImg) ->
+	erode(dilate(ErlImg)).
+
+% TODO: 
+% - uwspółbieżnić filtr uśredniający i gaussa

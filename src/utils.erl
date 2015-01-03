@@ -1,8 +1,11 @@
 -module(utils).
--export([getPixel/3, getPx/3, len/1, array_len/1, erlImgToImage/1,
-	synchronizeImg/2, merge/2, bin_to_array/1, every_snd/1, print/1]).
 -include("deps/erl_img/include/erl_img.hrl").
 -include("img_proc.hrl").
+-export([get_pixel_from_list2D/3, get_pixel_from_array2D/3, len/1, array_len/1, erl_img_to_image/1,
+	synchronize_img/2, merge/2, bin_to_array/1, every_snd/1, print/1,
+	extract_neighbours_from_array/3, extract_neighbours_from_list/3, 
+	list_to_array_2D/1]).
+
 %*************************************
 % Module with useful functions
 %*************************************
@@ -15,7 +18,7 @@
 %% in arguments
 %% [[X]] -> Integer -> Integer => X
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-getPixel(Matrix, Row, Column) ->
+get_pixel_from_list2D(Matrix, Row, Column) ->
 	Height = len(Matrix),
 	Line =
 	if 
@@ -38,7 +41,7 @@ getPixel(Matrix, Row, Column) ->
 %% two-dimentional array
 %% #image -> Integer -> Integer => X
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-getPx(Image, Row, Column) ->
+get_pixel_from_array2D(Image, Row, Column) ->
 	Width = Image#image.width,
 	Height = Image#image.height,
 	Array2D = Image#image.matrix,
@@ -106,6 +109,14 @@ list_to_array([H|T], Idx, Acc) ->
 	list_to_array(T, Idx+1, NewAcc).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Converts list of lists to array 
+%% of arrays
+%% [[X]] => array of arrays of X
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+list_to_array_2D(LofL) ->
+	list_to_array([list_to_array(List) || List <- LofL]).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Takes every second element from list
 %% starting with first
 %% [X] => [X]
@@ -115,14 +126,61 @@ every_snd([]) ->
 every_snd([H]) ->
 	[H];
 every_snd([H1,_|T]) ->
-	[H1] ++ every_snd(T).	
+	[H1] ++ every_snd(T).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Extract 9 neighbours from image
+%% given certain position.
+%% Image matrix data have to be array 
+%% of arrays
+%% #image -> Num -> Num => [Num]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+extract_neighbours_from_array(Image, Row, Col) -> 
+	% io:format("Extracting neighbourhood for row ~p, col ~p~n", [Row, Col]),
+	N =
+	[
+		% get_pixel_from_array2D method is critical here - it has to be fast!
+		try utils:get_pixel_from_array2D(Image, Row+R, Col+C) of			
+			Val ->
+				% io:format("~p ~p~n", [Row+R, Col+C]),
+				Val
+		catch
+			throw:{outofrange, _} -> 
+				% io:format("Exception catched ~p ~p~n", [Row+R, Col+C]),
+				% zeros out of boumdaries
+				0
+		end
+		|| R <- [-1,0,1], C <- [-1,0,1]
+	],
+	% io:format("neighbourhood: ~p~n", [N]),
+	N.	
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Extract 9 neighbours from image
+%% given certain position.
+%% Image matrix data have to be list 
+%% of lists
+%% #image -> Num -> Num => [Num]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+extract_neighbours_from_list(Image, Row, Col) -> 
+	N =
+	[
+		try utils:get_pixel_from_list2D(Image, Row+R, Col+C) of
+			Val -> Val
+		catch
+			throw:{outofrange, _} -> 0
+		end
+		|| R <- [-1,0,1], C <- [-1,0,1]
+	],
+	% io:format("neighbourhood: ~p~n", [N]),
+	N.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Converts #erl_image to record #image
 %% (see img_proc.hrl)
 %% #erl_image => #image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-erlImgToImage(Img) ->
+erl_img_to_image(Img) ->
 	Pixmap = lists:nth(1, Img#erl_image.pixmaps),
 	Pixels = Pixmap#erl_pixmap.pixels,
 
@@ -166,9 +224,9 @@ erlImgToImage(Img) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Synchronizes #image with #erl_image
 %% (see img_proc.hrl)
-%% #erl_image #image => #erl_image
+%% #erl_image -> #image => #erl_image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-synchronizeImg(ErlImg, Img) ->
+synchronize_img(ErlImg, Img) ->
 
 	Pxs = case Img#image.format of
 		gray8 ->
