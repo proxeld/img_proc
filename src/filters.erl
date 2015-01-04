@@ -2,8 +2,7 @@
 -include("deps/erl_img/include/erl_img.hrl").
 -include("img_proc.hrl").
 -export([strel/1, conv/2, gauss/1, process_image_with_mask/2,
-	average/1, median/1, min/1, max/1, erode/1, dilate/1,
-	open/1, close/1]).
+	average/1, median/1, min/1, max/1]).
 
 %*************************************
 % Module for contextual operations
@@ -203,33 +202,6 @@ max(ErlImg) ->
 		),
 	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Erosion operation
-%% #erl_image => #erl_image
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-erode(ErlImg) ->
-	min(ErlImg).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Dilatation operation
-%% #erl_image => #erl_image
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dilate(ErlImg) ->
-	max(ErlImg).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Opening image operation
-%% #erl_image => #erl_image
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-open(ErlImg) ->
-	dilate(erode(ErlImg)).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Closing image operation
-%% #erl_image => #erl_image
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-close(ErlImg) ->
-	erode(dilate(ErlImg)).
 
 % TODO: 
 % - uwspółbieżnić filtr uśredniający i gaussa

@@ -4,7 +4,7 @@
 -export([get_pixel_from_list2D/3, get_pixel_from_array2D/3, len/1, array_len/1, erl_img_to_image/1,
 	synchronize_img/2, merge/2, bin_to_array/1, every_snd/1, print/1,
 	extract_neighbours_from_array/3, extract_neighbours_from_list/3, 
-	list_to_array_2D/1]).
+	list_to_array_2D/1, array_to_list_2D/1, zipwith2D/3]).
 
 %*************************************
 % Module with useful functions
@@ -115,6 +115,28 @@ list_to_array([H|T], Idx, Acc) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 list_to_array_2D(LofL) ->
 	list_to_array([list_to_array(List) || List <- LofL]).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Converts array of arrays to list
+%% of lists
+%% array of arrays of X => [[X]] 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+array_to_list_2D(AofA) ->
+	[array:to_list(array:get(Idx, AofA)) || Idx <- lists:seq(0, array_len(AofA)-1)].
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Zips lists of lists using given
+%% function
+%% [[Num]] -> [[Num]] => [[Num]]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+zipwith2D(Fn, M1, M2) ->
+	zipwith_h(Fn, M1, M2, []).
+zipwith_h(_, [], [], Acc) ->
+	Acc;
+zipwith_h(Fn, [H1|T1], [H2|T2], Acc) ->
+	NewAcc = lists:append(Acc, [lists:zipwith(Fn,H1,H2)]),
+	zipwith_h(Fn, T1, T2, NewAcc).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Takes every second element from list

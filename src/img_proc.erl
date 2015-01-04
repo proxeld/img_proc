@@ -4,7 +4,7 @@
 -define(OUT_DIR, "out/").
 -export([load/1, save/1, save/2,
 		filterGauss/1, filterAverage/1, filterMedian/1, filterMin/1, filterMax/1,
-		erode/1, dilate/1, open/1, close/1,
+		erode/1, dilate/1, open/1, close/1, tophat/1, bothat/1,
 		test/0, test_time/0, vars/0]).
 
 %**************************************
@@ -75,34 +75,48 @@ filterMax(ErlImg) ->
 %% #erl_image => #erl_image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 erode(ErlImg) ->
-	filters:erode(ErlImg).
+	morfologic:erode(ErlImg).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Opens image
 %% #erl_image => #erl_image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 dilate(ErlImg) ->
-	filters:dilate(ErlImg).
+	morfologic:dilate(ErlImg).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Opens image
 %% #erl_image => #erl_image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 open(ErlImg) ->
-	filters:open(ErlImg).
+	morfologic:open(ErlImg).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Closes image
 %% #erl_image => #erl_image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 close(ErlImg) ->
-	filters:close(ErlImg).
+	morfologic:close(ErlImg).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Local extrema (maximum) detection
+%% #erl_image => #erl_image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+tophat(ErlImg) ->
+	morfologic:tophat(ErlImg).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Local extrema (minimum) detection
+%% #erl_image => #erl_image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+bothat(ErlImg) ->
+	morfologic:bothat(ErlImg).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Used for testing purpose
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 test() ->
-	{_, ErlImg} = load("priv/island.png"),
+	{_, ErlImg} = load("priv/lena.png"),
 	Gauss = filterGauss(ErlImg),
 	Avg = filterAverage(ErlImg),
 	Med = filterMedian(ErlImg),
@@ -110,13 +124,17 @@ test() ->
 	Erode = erode(ErlImg),
 	Open = open(ErlImg),
 	Close = close(ErlImg),
+	Tophat = tophat(ErlImg),
+	Bothat = bothat(ErlImg),
 	save(Gauss, ?OUT_DIR ++ "gauss.png"),
 	save(Avg, ?OUT_DIR ++ "avg.png"),
 	save(Med, ?OUT_DIR ++ "med.png"),
 	save(Dil, ?OUT_DIR ++ "dil.png"),
 	save(Erode, ?OUT_DIR ++ "erode.png"),
 	save(Open, ?OUT_DIR ++ "open.png"),
-	save(Close, ?OUT_DIR ++ "close.png").
+	save(Close, ?OUT_DIR ++ "close.png"),
+	save(Tophat, ?OUT_DIR ++ "tophat.png"),
+	save(Bothat, ?OUT_DIR ++ "bothat.png").
 
 test_time() -> 
 	{_, ErlImg} = load("priv/lenaSzum256.png"),
