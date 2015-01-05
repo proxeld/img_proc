@@ -1,8 +1,9 @@
 -module(filters).
 -include("deps/erl_img/include/erl_img.hrl").
 -include("img_proc.hrl").
--export([strel/1, conv/2, gauss/1, process_image_with_mask/2,
-	average/1, median/1, min/1, max/1]).
+-export([strel/1, conv/2, gaussian/1, process_image_with_mask/2,
+	average_filter/1, median/1, min/1, max/1]).
+
 
 %*************************************
 % Module for contextual operations
@@ -188,6 +189,33 @@ min(ErlImg) ->
 			fun(L) -> round(lists:min(L)) end
 		),
 	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Gaussian
+%% #erl_image => #erl_image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+gaussian(ErlImg) ->
+	Image = utils:erl_img_to_image(ErlImg),
+	Res = process_image_with_mask
+		(
+			Image, 
+			fun(L) -> round(lists:sum(math:muliply_lists(L, lists:flatten(strel(gauss))))) end
+		),
+	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).	
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Gaussian
+%% #erl_image => #erl_image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+average_filter(ErlImg) ->
+	Image = utils:erl_img_to_image(ErlImg),
+	Res = process_image_with_mask
+		(
+			Image, 
+			fun(L) -> round(lists:sum(math:muliply_lists(L, lists:flatten(strel(average))))) end
+		),
+	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).		
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Filters image - max filter

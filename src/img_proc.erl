@@ -40,14 +40,14 @@ save(ErlImg, Path) ->
 %% #erl_image => #erl_image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 filterGauss(ErlImg) ->
-	filters:gauss(ErlImg).
+	filters:gaussian(ErlImg).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Filters image with average mask
 %% #erl_image => #erl_image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 filterAverage(ErlImg) ->
-	filters:average(ErlImg).
+	filters:average_filter(ErlImg).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Filters image - median filter
