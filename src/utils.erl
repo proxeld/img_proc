@@ -4,7 +4,7 @@
 -export([get_pixel_from_list2D/3, get_pixel_from_array2D/3, len/1, array_len/1, erl_img_to_image/1,
 	synchronize_img/2, merge/2, bin_to_array/1, every_snd/1, print/1,
 	extract_neighbours_from_array/3, extract_neighbours_from_list/3, 
-	list_to_array_2D/1, array_to_list_2D/1, zipwith2D/3]).
+	list_to_array_2D/1, array_to_list_2D/1, zipwith2D/3, supported_or_exception/1]).
 
 %*************************************
 % Module with useful functions
@@ -228,9 +228,10 @@ erl_img_to_image(Img) ->
 			list_to_array(LofA);
 		r8g8b8a8 ->
 			Matrix = [binary:bin_to_list(Bajts) || {_, Bajts} <- Pixels],
-			LofL = [rowToRGBA(Row) || Row <- Matrix],
+			LofLWithAlpha = [rowToRGBA(Row) || Row <- Matrix],
+			LofL = [every_snd(List) || List <- LofLWithAlpha],
+			Alpha = [every_snd(T) || [_|T] <- LofLWithAlpha],
 			LofA = [list_to_array(List) || List <- LofL],
-			Alpha = [],
 			list_to_array(LofA);
 		_ ->
 			Alpha = [],
@@ -267,10 +268,6 @@ synchronize_img(ErlImg, Img) ->
 				[{Nr, merge(Row, lists:nth(Nr+1, Img#image.alpha))} 
 					|| {Nr, Row} <- Rows],
 			[{Nr, binary:list_to_bin(Row)} || {Nr, Row} <- WithAlpha];
-		r8g8b8 ->
-			todo;
-		r8g8b8a8 ->
-			todo;
 		_ ->
 			throw({error, "Image format not supported", Img#image.format})
 	end,
@@ -282,6 +279,31 @@ synchronize_img(ErlImg, Img) ->
 		height=Img#image.height,
 		pixmaps=[Pixmap#erl_pixmap{pixels=Pxs}]
 	}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Returns supported formats list
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+supported_formats_list() ->
+	[gray8, gray8a8].
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Checks if image format is supported
+%% atom => true|false
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+supported_format(Format) ->
+	lists:any(fun(F) -> F =:= Format end, supported_formats_list()). 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Checks if image format is supported
+%% If not, raises exception
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+supported_or_exception(Format) ->
+	case supported_format(Format) of
+		true ->
+			ok;
+		_ ->
+			throw({not_supported, "Image format not supported.", Format})
+	end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Conversts list to list of tuples of
@@ -301,9 +323,9 @@ rowToRGB([R,G,B|T]) ->
 %  [X] => [{X,X,X,X}]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 rowToRGBA([R,G,B,A]) ->
-	[{R,G,B,A}];
+	[{R,G,B}, A];
 rowToRGBA([R,G,B,A|T]) ->
-	[{R,G,B,A}|rowToRGBA(T)].
+	[{R,G,B}, A|rowToRGBA(T)].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Printing image matrix

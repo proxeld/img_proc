@@ -2,7 +2,7 @@
 -include("deps/erl_img/include/erl_img.hrl").
 -include("img_proc.hrl").
 -export([strel/1, conv/2, gaussian/1, process_image_with_mask/2,
-	average_filter/1, median/1, min/1, max/1]).
+	average/1, median/1, min/1, max/1]).
 
 
 %*************************************
@@ -35,59 +35,11 @@ strel(Type) ->
 %% #image -> array of arrays => [[Num]]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 conv(Image, SE) ->
-	conv_row(Image, SE, 0, []).
-conv_row(Image, SE, Row, Acc) ->
-
-	ComputedRow = 
-		[
-			round(
-				lists:sum(
-					math:muliply_lists(utils:extract_neighbours_from_array(Image, Row, Col), lists:flatten(SE))
-				)
-			)
-
-			||
-
-			Col <- lists:seq(0, Image#image.width-1)
-		],
-	% io:format("~p~n", [array:to_list(Array2D)]),
-	% io:format("~p~n", [ComputedRow]),
-	Rows = Image#image.height,
-	if
-		Row <  Rows ->
-			conv_row(Image, SE, Row+1, lists:append(Acc, [ComputedRow]));
-		true ->
-			Acc
-	end.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Executes convolution
-%% Image matrix data have to be list 
-%% of lists.
-%% Significantly slower
-%% #image -> array of arrays => [[Num]]
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% conv(Image, SE) ->
-% 	conv_row(Image, SE, 0, []).
-% conv_row(Image, SE, Row, Acc) ->
-% 	ComputedRow = 
-% 		[
-% 			round(
-% 				lists:sum(
-% 					math:muliplyL(utils:extract_neighbours_from_list(Image, Row, Col), lists:flatten(SE))
-% 				)
-% 			)
-% 			||
-% 			Col <- lists:seq(1, utils:len(Image))
-% 		],
-% 	% io:format("~p", [ComputedRow]),
-% 	Rows = utils:len(Image),
-% 	if
-% 		Row =<  Rows ->
-% 			conv_row(Image, SE, Row+1, lists:append(Acc, [ComputedRow]));
-% 		true ->
-% 			Acc
-% 	end.
+	process_image_with_mask
+		(
+			Image, 
+			fun(L) -> round(lists:sum(math:muliply_lists(L, lists:flatten(SE)))) end
+		).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% General function for concurrent image 
@@ -95,6 +47,7 @@ conv_row(Image, SE, Row, Acc) ->
 %% #image -> ([Num] -> Integer) => [[Num]]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 process_image_with_mask(Image, Fn) ->
+	utils:supported_or_exception(Image#image.format),
 	Height = Image#image.height,
 	MasterPid = self(),
 	% spawn supervisor
@@ -147,24 +100,6 @@ process_image_with_mask_supervisor(Parent, Remained, Acc) ->
 	end. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Filters image with gaussian mask
-%% #erl_image => #erl_image
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-gauss(ErlImg) ->
-	Image = utils:erl_img_to_image(ErlImg),
-	Res = filters:conv(Image, filters:strel(gauss)),
-	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Filters image with average mask
-%% #erl_image => #erl_image
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-average(ErlImg) ->
-	Image = utils:erl_img_to_image(ErlImg),
-	Res = filters:conv(Image, filters:strel(average)),
-	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Filters image - midian filter
 %% #erl_image => #erl_image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -190,31 +125,22 @@ min(ErlImg) ->
 		),
 	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Gaussian
 %% #erl_image => #erl_image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 gaussian(ErlImg) ->
 	Image = utils:erl_img_to_image(ErlImg),
-	Res = process_image_with_mask
-		(
-			Image, 
-			fun(L) -> round(lists:sum(math:muliply_lists(L, lists:flatten(strel(gauss))))) end
-		),
+	Res = conv(Image, strel(gauss)),
 	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Gaussian
 %% #erl_image => #erl_image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-average_filter(ErlImg) ->
+average(ErlImg) ->
 	Image = utils:erl_img_to_image(ErlImg),
-	Res = process_image_with_mask
-		(
-			Image, 
-			fun(L) -> round(lists:sum(math:muliply_lists(L, lists:flatten(strel(average))))) end
-		),
+	Res = conv(Image, strel(average)),
 	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).		
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -229,7 +155,3 @@ max(ErlImg) ->
 			fun(L) -> round(lists:max(L)) end
 		),
 	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).
-
-
-% TODO: 
-% - uwspółbieżnić filtr uśredniający i gaussa

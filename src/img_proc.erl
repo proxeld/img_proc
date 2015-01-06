@@ -5,7 +5,7 @@
 -export([load/1, save/1, save/2,
 		filterGauss/1, filterAverage/1, filterMedian/1, filterMin/1, filterMax/1,
 		erode/1, dilate/1, open/1, close/1, tophat/1, bothat/1,
-		test/0, test_time/0, vars/0]).
+		test/0, test_time/0]).
 
 %**************************************
 % Main module with image processing API
@@ -47,7 +47,7 @@ filterGauss(ErlImg) ->
 %% #erl_image => #erl_image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 filterAverage(ErlImg) ->
-	filters:average_filter(ErlImg).
+	filters:average(ErlImg).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Filters image - median filter
@@ -116,7 +116,7 @@ bothat(ErlImg) ->
 %% Used for testing purpose
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 test() ->
-	{_, ErlImg} = load("priv/lena.png"),
+	{_, ErlImg} = load("priv/jet.png"),
 	Gauss = filterGauss(ErlImg),
 	Avg = filterAverage(ErlImg),
 	Med = filterMedian(ErlImg),
@@ -142,8 +142,3 @@ test_time() ->
 	io:format("--------------~n"),
 	time:avg(utils, get_px, [Img, 255, 255], 512*512),
 	io:format("~n--------------~n").
-
-vars() ->
-	{_, E} = load("priv/g4.png"),
-	I = utils:erl_img_to_image(E),
-	{E, I}.
