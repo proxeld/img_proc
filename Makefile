@@ -11,6 +11,9 @@ update:
 start: compile
 	@$(ERL_SHELL) -pa ebin/ -pa deps/erl_img/ebin/
 
+startNode: compile
+	@$(ERL_SHELL) -pa ebin/ -pa deps/erl_img/ebin/ -sname img_proc_serv -setcookie secret_cookie
+
 test: compile
 	rm -rf out/
 	mkdir out
