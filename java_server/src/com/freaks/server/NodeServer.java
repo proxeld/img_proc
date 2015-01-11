@@ -146,11 +146,6 @@ public class NodeServer {
                     mbox.send(from, response);
                 }
 
-                if (msgFromClient instanceof OtpErlangTuple) {
-                    msg = (OtpErlangTuple) msgFromClient;
-                    from = (OtpErlangPid) (msg.elementAt(0));
-                    mbox.send(from, msg.elementAt(1));
-                }
             } catch(IOException e){
                 e.printStackTrace();
             } catch (OtpErlangDecodeException e) {

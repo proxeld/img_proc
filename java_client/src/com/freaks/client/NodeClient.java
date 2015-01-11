@@ -89,7 +89,21 @@ public class NodeClient {
     }
 
     public OtpErlangObject receiveResponse() throws InterruptedException, OtpErlangExit, OtpAuthException, IOException {
-        return connection.receive(Settings.TIMEOUT_THRESHOLD);
+        return connection.receive();
+    }
+
+    /**
+     * Pings remote host
+     */
+    public void pingRemote() throws TimeoutException, IOException {
+
+        OtpNode pingNode = new OtpNode("ping", cookie);
+
+        mainLogger.info("Pinging remote node...");
+        if(!pingNode.ping(peer, Settings.TIMEOUT_THRESHOLD))
+            throw new TimeoutException("Cannot ping erlang node");
+        pingNode.close();
+        mainLogger.info("Remote host responded!");
     }
 
 }

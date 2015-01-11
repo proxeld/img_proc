@@ -1,8 +1,12 @@
 package com.freaks.client;
 
+import com.freaks.Settings;
+
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
+import javax.swing.plaf.ColorUIResource;
+import javax.swing.plaf.FontUIResource;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -10,6 +14,7 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Enumeration;
 import java.util.logging.Logger;
 
 /**
@@ -24,7 +29,6 @@ public class View extends JFrame {
     private Logger guiLoger = Logger.getLogger("guiLogger");
 
     private JPanel rootPanel;
-    private JButton maxButton;
     private JButton averageButton;
     private JButton minButton;
     private JButton gaussButton;
@@ -32,6 +36,16 @@ public class View extends JFrame {
     private JPanel resultImagePanel;
     private JButton connectButton;
     private JButton medianButton;
+    private JPanel toolbarPanel;
+    private JToolBar toolbar;
+    private JButton erodeButton;
+    private JButton dilateButton;
+    private JButton openButton;
+    private JButton closeButton;
+    private JButton tophatButton;
+    private JButton bottomhatButton;
+    private JButton maxButton;
+    private JPanel buttonsPanel;
 
     private JMenuBar menuBar;
     private JMenu fileMenu;
@@ -123,11 +137,13 @@ public class View extends JFrame {
                     try {
                         BufferedImage myPicture = ImageIO.read(image);
                         JLabel picLabel = new JLabel(new ImageIcon(myPicture));
+                        picLabel.setPreferredSize(new Dimension(512, 512));
+                        picLabel.setSize(512, 512);
                         sourceImage = myPicture;
                         sourceImagePanel.removeAll();
                         sourceImagePanel.add(picLabel);
-                        rootPanel.repaint();
-                        rootPanel.invalidate();
+                        sourceImagePanel.repaint();
+                        sourceImagePanel.revalidate();
 
                     } catch(IOException e) {
                         e.printStackTrace();
@@ -155,7 +171,7 @@ public class View extends JFrame {
         aboutMenuItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                showInfoPopup("Authors: Maciej Urbanek & Jakub Pelczar\nVersion: 0.0.2");
+                showInfoPopup("Authors: Maciej Urbanek & Jakub Pelczar\nVersion: " + Settings.VERSION);
             }
         });
 
@@ -200,11 +216,54 @@ public class View extends JFrame {
                 controller.onOperationChosen(sourceImage, "filterMax");
             }
         });
+
+        erodeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                controller.onOperationChosen(sourceImage, "erode");
+            }
+        });
+
+        dilateButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                controller.onOperationChosen(sourceImage, "dilate");
+            }
+        });
+
+        openButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                controller.onOperationChosen(sourceImage, "open");
+            }
+        });
+
+        closeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                controller.onOperationChosen(sourceImage, "close");
+            }
+        });
+
+        tophatButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                controller.onOperationChosen(sourceImage, "tophat");
+            }
+        });
+
+        bottomhatButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                controller.onOperationChosen(sourceImage, "bothat");
+            }
+        });
     }
 
     private void createUIComponents() {
         sourceImagePanel = new JPanel();
         resultImagePanel = new JPanel();
+        connectButton = new JButton("d", new ImageIcon("assets/connect.gif"));
     }
 
     void setProcessedImage(ImageIcon imageIcon) {
@@ -220,12 +279,13 @@ public class View extends JFrame {
         processedImage = bi;
     }
 
-    void displayProccessedImage(ImageIcon imageIcon) {
+    void displayProcessedImage(ImageIcon imageIcon) {
         JLabel picLabel = new JLabel(imageIcon);
+
         resultImagePanel.removeAll();
         resultImagePanel.add(picLabel);
-        rootPanel.invalidate();
-        rootPanel.repaint();
+        resultImagePanel.repaint();
+        resultImagePanel.revalidate();
     }
 
     void showInfoPopup(String msg) {
@@ -242,5 +302,47 @@ public class View extends JFrame {
 
     public void setController(Controller _controller) {
         controller = _controller;
+    }
+
+    /**
+     * Completely changes style of the elements building the UI
+     */
+    public static void changeWindowStyle() {
+
+        UIManager.put("nimbusBase", new Color(0x3C3F41));
+        UIManager.put("nimbusBlueGrey", new Color(0x494E50));
+        UIManager.put("control", new Color(0x3C3F41));
+        UIManager.put("text", new Color(0x909090));
+        UIManager.put("ComboBox.background", new ColorUIResource(UIManager.getColor("TextField.background")));
+        UIManager.put("ComboBox.foreground", new ColorUIResource(UIManager.getColor("TextField.foreground")));
+        UIManager.put("ComboBox.selectionBackground", new ColorUIResource(Color.GREEN));
+        UIManager.put("TabbedPane:TabbedPaneTab[Disabled].backgroundPainter", new ColorUIResource(Color.WHITE));
+
+        /**
+         * Changing appearance style
+         */
+        for (UIManager.LookAndFeelInfo laf : UIManager.getInstalledLookAndFeels()) {
+            if ("Nimbus".equals(laf.getName())){
+                try {
+                    UIManager.setLookAndFeel(laf.getClassName());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        // changing fonts
+        Font font = new Font("Droid Sans", Font.BOLD, 13);
+        Enumeration keys = UIManager.getDefaults().keys();
+        while (keys.hasMoreElements()) {
+            Object key = keys.nextElement();
+            Object value = UIManager.get (key);
+            if (value != null && value instanceof FontUIResource)
+                UIManager.put (key, font);
+        }
+
+        UIManager.put("nimbusLightBackground", Color.BLACK);
+        UIManager.put("Label.font", font);
+
     }
 }

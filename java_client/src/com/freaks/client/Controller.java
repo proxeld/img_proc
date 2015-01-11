@@ -38,6 +38,9 @@ public class Controller {
 
         try {
             erlangNodeClient.connect();
+            view.showInfoPopup("Successfully connected!");
+            loopCheckServerStatus();
+
         } catch (TimeoutException e) {
             view.showErrorPopup("Connection timeout... Maybe server node it is not running?");
         } catch (IOException e) {
@@ -45,6 +48,7 @@ public class Controller {
         } catch (OtpAuthException e) {
             view.showInfoPopup("Connection refused by remote node. Check your setting (Setting.java).");
         }
+
     }
 
     public void onSave(BufferedImage image, File imageFile) {
@@ -82,26 +86,57 @@ public class Controller {
         try {
             erlangNodeClient.sendMessage(data);
         } catch (IOException e) {
+            view.showErrorPopup("There was an error during sending message to server.");
             e.printStackTrace();
         }
 
         try {
             OtpErlangObject response = erlangNodeClient.receiveResponse();
+            logger.info("Received response: " + response.toString());
             OtpErlangBinary processedImageBinary = (OtpErlangBinary) (response);
             ImageIcon processedImage = (ImageIcon)(processedImageBinary.getObject());
 
             view.setProcessedImage(processedImage);
-            view.displayProccessedImage(processedImage);
+            view.displayProcessedImage(processedImage);
 
         } catch (InterruptedException e) {
+            view.showErrorPopup("There was an error during receiving message to server.");
             e.printStackTrace();
         } catch (OtpErlangExit otpErlangExit) {
+            view.showErrorPopup("There was an error during sending message to server.");
             otpErlangExit.printStackTrace();
         } catch (OtpAuthException e) {
+            view.showErrorPopup("Connection refused by remote node. Check your setting (Setting.java).");
             e.printStackTrace();
         } catch (IOException e) {
+            view.showErrorPopup("There was an error during receiving message to server.");
             e.printStackTrace();
         }
+    }
+
+    void loopCheckServerStatus() {
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        erlangNodeClient.pingRemote();
+                        Thread.currentThread().sleep(Settings.PING_INTERVAL);
+                        
+                    } catch (TimeoutException e) {
+                        view.showWarningPopup("Connection with server lost");
+                        break;
+                    } catch (IOException e) {
+                        view.showWarningPopup("Connection with server lost");
+                        break;
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        break;
+                    }
+                }
+            }
+        }).start();
     }
 
     private void dump_table(Integer[][] tab) {
@@ -120,7 +155,6 @@ public class Controller {
                 (argb >> 16) & 0xff, // red
                 (argb >> 8) & 0xff, // green
                 (argb) & 0xff  // blue
-
         };
 
         return rgb;
