@@ -146,14 +146,9 @@ public class NodeServer {
                     mbox.send(from, response);
                 }
 
-            } catch(IOException e){
-                e.printStackTrace();
-            } catch (OtpErlangDecodeException e) {
-                e.printStackTrace();
-            } catch (OtpErlangExit otpErlangExit) {
-                otpErlangExit.printStackTrace();
-            } catch (OtpAuthException e) {
-                e.printStackTrace();
+            } catch(Exception e) {
+                logger.info("Erlang node not detected. Terminating.");
+                return;
             }
         }
     }

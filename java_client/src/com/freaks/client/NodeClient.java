@@ -3,10 +3,8 @@ package com.freaks.client;
 import com.ericsson.otp.erlang.*;
 import com.freaks.Settings;
 
-import javax.swing.*;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.Set;
+import java.util.Date;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
@@ -38,7 +36,7 @@ public class NodeClient {
 
         OtpNode pingNode = new OtpNode("ping", cookie);
         OtpPeer other = new OtpPeer(peer);
-        OtpSelf self = new OtpSelf(clientName, cookie);
+        OtpSelf self = new OtpSelf(generateNodeName(clientName), cookie);
 
         mainLogger.info("Pinging remote node...");
         if(!pingNode.ping(peer, Settings.TIMEOUT_THRESHOLD))
@@ -106,4 +104,13 @@ public class NodeClient {
         mainLogger.info("Remote host responded!");
     }
 
+    /**
+     * Returns node name
+     * Used to distinguish multiple nodes (clients) running on one machine.
+     * @param prefix prefix common to all clients
+     * @return unique name
+     */
+    private String generateNodeName(String prefix) {
+        return prefix + new Date().getTime();
+    }
 }

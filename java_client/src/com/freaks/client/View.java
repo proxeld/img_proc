@@ -136,6 +136,11 @@ public class View extends JFrame {
 
                     try {
                         BufferedImage myPicture = ImageIO.read(image);
+
+                        if(myPicture.getWidth() > 512 || myPicture.getHeight() > 512) {
+                            showInfoPopup("Image max size is 512x512");
+                            return;
+                        }
                         JLabel picLabel = new JLabel(new ImageIcon(myPicture));
                         picLabel.setPreferredSize(new Dimension(512, 512));
                         picLabel.setSize(512, 512);
@@ -281,6 +286,9 @@ public class View extends JFrame {
 
     void displayProcessedImage(ImageIcon imageIcon) {
         JLabel picLabel = new JLabel(imageIcon);
+
+        picLabel.setPreferredSize(new Dimension(512, 512));
+        picLabel.setSize(512, 512);
 
         resultImagePanel.removeAll();
         resultImagePanel.add(picLabel);
