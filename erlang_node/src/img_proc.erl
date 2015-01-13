@@ -4,7 +4,7 @@
 -define(OUT_DIR, "out/").
 -export([load/1, save/1, save/2,
 		filterGauss/1, filterAverage/1, filterMedian/1, filterMin/1, filterMax/1,
-		erode/1, dilate/1, open/1, close/1, tophat/1, bothat/1,
+		erode/1, dilate/1, open/1, close/1, tophat/1, bothat/1, prewitt/1, roberts/1,
 		test/0, testMenu/0, test_time/0, get/1]).
 
 %**************************************
@@ -119,6 +119,22 @@ tophat(ErlImg) ->
 bothat(ErlImg) ->
 	morfologic:bothat(ErlImg).
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Prewitt gradient
+%% #erl_image => #erl_image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+prewitt(ErlImg) ->
+	filters:prewitt(ErlImg).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Sobel gradient
+%% #erl_image => #erl_image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+roberts(ErlImg) ->
+	filters:roberts(ErlImg).		
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Used for testing purpose
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -170,6 +186,8 @@ testMenu() ->
 	io:format("- 7) Closing                              -~n"),
 	io:format("- 8) Top-Hat transformation               -~n"),
 	io:format("- 9) Bottom-Hat transformation            -~n"),
+	io:format("- 10) Prewitt gradient                    -~n"),
+	io:format("- 11) Roberts gradient                    -~n"),
 	io:format("-------------------------------------------~n"),
 	Operation = io:get_line("Number> "),
 	case Operation of
@@ -226,6 +244,18 @@ testMenu() ->
 			Bothat = bothat(ErlImg),
 			save(Bothat, ?OUT_DIR ++ "bothat.png"),
 			io:format("Output file saved to: ~s !~n", [?OUT_DIR ++ "bothat.png"]);
+
+		"10\n" -> 
+			io:format("-          Prewitt gradfient              -~n"),
+			Prewitt = prewitt(ErlImg),
+			save(Prewitt, ?OUT_DIR ++ "prewitt.png"),
+			io:format("Output file saved to: ~s !~n", [?OUT_DIR ++ "prewitt.png"]);
+
+		"11\n" -> 
+			io:format("-          Roberts gradient               -~n"),
+			Roberts = roberts(ErlImg),
+			save(Roberts, ?OUT_DIR ++ "roberts.png"),
+			io:format("Output file saved to: ~s !~n", [?OUT_DIR ++ "roberts.png"]);
 		
 		_ -> io:format("-         Wrong operation!               -~n")
 	end,

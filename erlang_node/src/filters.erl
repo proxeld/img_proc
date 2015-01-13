@@ -1,8 +1,8 @@
 -module(filters).
 -include("deps/erl_img/include/erl_img.hrl").
 -include("img_proc.hrl").
--export([strel/1, conv/2, gaussian/1, process_image_with_mask/2,
-	average/1, median/1, min/1, max/1]).
+-export([strel/1, gradMask/1, conv/2, gradient/2, gaussian/1, process_image_with_mask/2,
+	average/1, median/1, min/1, max/1, prewitt/1, roberts/1]).
 
 
 %*************************************
@@ -26,9 +26,41 @@ strel(Type) ->
 			 [[1,1,1],
 			 [1,1,1],
 			 [1,1,1]];
+
 		_ -> throw({badarg, "There is now structural element of this type"})
 	end,
 	[[E/lists:sum(lists:flatten(M)) || E <- R] || R <- M].
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Returns mask for gradient
+%% atom => [[Num]]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+gradMask(Type) ->
+	M = 
+	case Type of
+		prewitt ->
+			 [[-1/3,-1/3,-1/3],
+			 [0,0,0],
+			 [1/3,1/3,1/3]];
+		roberts ->
+			 [[0,0,0],
+			 [-1,0,0],
+			 [0,1,0]];
+
+		_ -> throw({badarg, "There is now gradient mask of this type"})
+	end.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Executes gradient filtering
+%% #image -> array of arrays => [[Num]]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+gradient(Image, SE) ->
+	process_image_with_mask
+		(
+			Image, 
+			fun(L) -> round(abs(lists:sum(math:muliply_lists(L, lists:flatten(SE))))) end
+		).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Executes convolution
@@ -40,6 +72,7 @@ conv(Image, SE) ->
 			Image, 
 			fun(L) -> round(lists:sum(math:muliply_lists(L, lists:flatten(SE)))) end
 		).
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% General function for concurrent image 
@@ -135,13 +168,34 @@ gaussian(ErlImg) ->
 	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Gaussian
+%% Average
 %% #erl_image => #erl_image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 average(ErlImg) ->
 	Image = utils:erl_img_to_image(ErlImg),
 	Res = conv(Image, strel(average)),
 	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).		
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Prewitt gradient
+%% #erl_image => #erl_image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+prewitt(ErlImg) ->
+	Image = utils:erl_img_to_image(ErlImg),
+	Res = gradient(Image, gradMask(prewitt)),
+	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).		
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Roberts gradient
+%% #erl_image => #erl_image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+roberts(ErlImg) ->
+	Image = utils:erl_img_to_image(ErlImg),
+	Res = gradient(Image, gradMask(roberts)),
+	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).		
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Filters image - max filter

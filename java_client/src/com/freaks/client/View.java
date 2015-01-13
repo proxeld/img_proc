@@ -45,6 +45,8 @@ public class View extends JFrame {
     private JButton tophatButton;
     private JButton bottomhatButton;
     private JButton maxButton;
+    private JButton prewittButton;
+    private JButton sobelButton;
     private JPanel buttonsPanel;
 
     private JMenuBar menuBar;
@@ -261,6 +263,18 @@ public class View extends JFrame {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
                 controller.onOperationChosen(sourceImage, "bothat");
+            }
+        });
+        prewittButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                controller.onOperationChosen(sourceImage, "prewitt");
+            }
+        });
+        sobelButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                controller.onOperationChosen(sourceImage, "roberts");
             }
         });
     }
