@@ -48,6 +48,7 @@ public class View extends JFrame {
     private JButton prewittButton;
     private JButton sobelButton;
     private JPanel buttonsPanel;
+    private JButton robertsButton;
 
     private JMenuBar menuBar;
     private JMenu fileMenu;
@@ -84,10 +85,11 @@ public class View extends JFrame {
         fileMenu = new JMenu("File");
         fileMenu.setMnemonic(KeyEvent.VK_F);
 
-        openFileMenuItem = new JMenuItem("Load image...", KeyEvent.VK_L);
+        openFileMenuItem = new JMenuItem("Load image...", new ImageIcon("assets/open.gif"));
+        openButton.setMnemonic(KeyEvent.VK_L);
         fileMenu.add(openFileMenuItem);
 
-        saveFileMenuItem = new JMenuItem("Save image", new ImageIcon("images/save.gif"));
+        saveFileMenuItem = new JMenuItem("Save image", new ImageIcon("assets/save.gif"));
         saveFileMenuItem.setMnemonic(KeyEvent.VK_S);
         fileMenu.add(saveFileMenuItem);
 
@@ -185,96 +187,279 @@ public class View extends JFrame {
         connectButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                controller.onConnect();
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        controller.onConnect();
+                    }
+                }).start();
             }
         });
 
         averageButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-            controller.onOperationChosen(sourceImage, "filterAverage");
+                setOperationsEnabled(false);
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        controller.onOperationChosen(sourceImage, "filterAverage");
+
+                        // according to best practices - invoke from event dispatch thread
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                setOperationsEnabled(true);
+                            }
+                        });
+                    }
+                }).start();
             }
         });
 
         gaussButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                controller.onOperationChosen(sourceImage, "filterGauss");
+                setOperationsEnabled(false);
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        controller.onOperationChosen(sourceImage, "filterGauss");
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                setOperationsEnabled(true);
+                            }
+                        });
+                    }
+                }).start();
             }
         });
 
         medianButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                controller.onOperationChosen(sourceImage, "filterMedian");
+                setOperationsEnabled(false);
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        controller.onOperationChosen(sourceImage, "filterMedian");
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                setOperationsEnabled(true);
+                            }
+                        });
+                    }
+                }).start();
             }
         });
 
         minButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                controller.onOperationChosen(sourceImage, "filterMin");
+                setOperationsEnabled(false);
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        controller.onOperationChosen(sourceImage, "filterMin");
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                setOperationsEnabled(true);
+                            }
+                        });
+                    }
+                }).start();
             }
         });
 
         maxButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                controller.onOperationChosen(sourceImage, "filterMax");
+                setOperationsEnabled(false);
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        controller.onOperationChosen(sourceImage, "filterMax");
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                setOperationsEnabled(true);
+                            }
+                        });
+                    }
+                }).start();
             }
         });
 
         erodeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                controller.onOperationChosen(sourceImage, "erode");
+                setOperationsEnabled(false);
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        controller.onOperationChosen(sourceImage, "erode");
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                setOperationsEnabled(true);
+                            }
+                        });
+                    }
+                }).start();
             }
         });
 
         dilateButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                controller.onOperationChosen(sourceImage, "dilate");
+                setOperationsEnabled(false);
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        controller.onOperationChosen(sourceImage, "dilate");
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                setOperationsEnabled(true);
+                            }
+                        });
+                    }
+                }).start();
             }
         });
 
         openButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                controller.onOperationChosen(sourceImage, "open");
+                setOperationsEnabled(false);
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        controller.onOperationChosen(sourceImage, "open");
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                setOperationsEnabled(true);
+                            }
+                        });
+                    }
+                }).start();
             }
         });
 
         closeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                controller.onOperationChosen(sourceImage, "close");
+                setOperationsEnabled(false);
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        controller.onOperationChosen(sourceImage, "close");
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                setOperationsEnabled(true);
+                            }
+                        });
+                    }
+                }).start();
             }
         });
 
         tophatButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                controller.onOperationChosen(sourceImage, "tophat");
+                setOperationsEnabled(false);
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        controller.onOperationChosen(sourceImage, "tophat");
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                setOperationsEnabled(true);
+                            }
+                        });
+                    }
+                }).start();
             }
         });
 
         bottomhatButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                controller.onOperationChosen(sourceImage, "bothat");
+                setOperationsEnabled(false);
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        controller.onOperationChosen(sourceImage, "bothat");
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                setOperationsEnabled(true);
+                            }
+                        });
+                    }
+                }).start();
             }
         });
         prewittButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                controller.onOperationChosen(sourceImage, "prewitt");
+                setOperationsEnabled(false);
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        controller.onOperationChosen(sourceImage, "prewitt");
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                setOperationsEnabled(true);
+                            }
+                        });
+                    }
+                }).start();
             }
         });
+
+        robertsButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                setOperationsEnabled(false);
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        controller.onOperationChosen(sourceImage, "roberts");
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                setOperationsEnabled(true);
+                            }
+                        });
+                    }
+                }).start();
+            }
+        });
+
         sobelButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                controller.onOperationChosen(sourceImage, "roberts");
+                setOperationsEnabled(false);
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        controller.onOperationChosen(sourceImage, "sobel");
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                setOperationsEnabled(true);
+                            }
+                        });
+                    }
+                }).start();
             }
         });
     }
@@ -310,6 +495,23 @@ public class View extends JFrame {
         resultImagePanel.revalidate();
     }
 
+    void setOperationsEnabled(boolean enabled) {
+        maxButton.setEnabled(enabled);
+        minButton.setEnabled(enabled);
+        averageButton.setEnabled(enabled);
+        gaussButton.setEnabled(enabled);
+        medianButton.setEnabled(enabled);
+        openButton.setEnabled(enabled);
+        closeButton.setEnabled(enabled);
+        erodeButton.setEnabled(enabled);
+        dilateButton.setEnabled(enabled);
+        bottomhatButton.setEnabled(enabled);
+        tophatButton.setEnabled(enabled);
+        prewittButton.setEnabled(enabled);
+        robertsButton.setEnabled(enabled);
+        sobelButton.setEnabled(enabled);
+    }
+
     void showInfoPopup(String msg) {
         JOptionPane.showMessageDialog(View.this, msg);
     }
@@ -339,6 +541,7 @@ public class View extends JFrame {
         UIManager.put("ComboBox.foreground", new ColorUIResource(UIManager.getColor("TextField.foreground")));
         UIManager.put("ComboBox.selectionBackground", new ColorUIResource(Color.GREEN));
         UIManager.put("TabbedPane:TabbedPaneTab[Disabled].backgroundPainter", new ColorUIResource(Color.WHITE));
+        UIManager.put("Button.foreground", new Color(0, 0, 0));
 
         /**
          * Changing appearance style

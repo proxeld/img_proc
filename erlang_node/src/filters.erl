@@ -2,7 +2,7 @@
 -include("deps/erl_img/include/erl_img.hrl").
 -include("img_proc.hrl").
 -export([strel/1, gradMask/1, conv/2, gradient/2, gaussian/1, process_image_with_mask/2,
-	average/1, median/1, min/1, max/1, prewitt/1, roberts/1]).
+	average/1, median/1, min/1, max/1, prewitt/1, roberts/1, sobel/1]).
 
 
 %*************************************
@@ -37,7 +37,6 @@ strel(Type) ->
 %% atom => [[Num]]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 gradMask(Type) ->
-	M = 
 	case Type of
 		prewitt ->
 			 [[-1/3,-1/3,-1/3],
@@ -47,7 +46,10 @@ gradMask(Type) ->
 			 [[0,0,0],
 			 [-1,0,0],
 			 [0,1,0]];
-
+		sobel ->
+			[[-1/4,0,1/4],
+			[-2/4,0,2/4],
+			[-1/4,0,1/4]];
 		_ -> throw({badarg, "There is now gradient mask of this type"})
 	end.
 
@@ -195,6 +197,16 @@ roberts(ErlImg) ->
 	Image = utils:erl_img_to_image(ErlImg),
 	Res = gradient(Image, gradMask(roberts)),
 	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).		
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Sobel gradient
+%% #erl_image => #erl_image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+sobel(ErlImg) ->
+	Image = utils:erl_img_to_image(ErlImg),
+	Res = gradient(Image, gradMask(sobel)),
+	utils:synchronize_img(ErlImg, Image#image{matrix=Res}).	
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

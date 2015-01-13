@@ -16,4 +16,4 @@ out/
 *.iml
 java_client/\.idea/
 java_server/\.idea/
-tmp/*
+java_server/tmp/*

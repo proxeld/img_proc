@@ -4,7 +4,7 @@
 -define(OUT_DIR, "out/").
 -export([load/1, save/1, save/2,
 		filterGauss/1, filterAverage/1, filterMedian/1, filterMin/1, filterMax/1,
-		erode/1, dilate/1, open/1, close/1, tophat/1, bothat/1, prewitt/1, roberts/1,
+		erode/1, dilate/1, open/1, close/1, tophat/1, bothat/1, prewitt/1, roberts/1, sobel/1,
 		test/0, testMenu/0, test_time/0, get/1]).
 
 %**************************************
@@ -129,11 +129,18 @@ prewitt(ErlImg) ->
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Sobel gradient
+%% Roberts gradient
 %% #erl_image => #erl_image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 roberts(ErlImg) ->
 	filters:roberts(ErlImg).		
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Sobel gradient
+%% #erl_image => #erl_image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+sobel(ErlImg) ->
+	filters:sobel(ErlImg).		
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Used for testing purpose
@@ -149,6 +156,8 @@ test() ->
 	Close = close(ErlImg),
 	Tophat = tophat(ErlImg),
 	Bothat = bothat(ErlImg),
+	Prewitt = prewitt(ErlImg),
+	Sobel = sobel(ErlImg),
 	save(Gauss, ?OUT_DIR ++ "gauss.png"),
 	save(Avg, ?OUT_DIR ++ "avg.png"),
 	save(Med, ?OUT_DIR ++ "med.png"),
@@ -157,7 +166,10 @@ test() ->
 	save(Open, ?OUT_DIR ++ "open.png"),
 	save(Close, ?OUT_DIR ++ "close.png"),
 	save(Tophat, ?OUT_DIR ++ "tophat.png"),
-	save(Bothat, ?OUT_DIR ++ "bothat.png").
+	save(Bothat, ?OUT_DIR ++ "bothat.png"),
+	save(Tophat, ?OUT_DIR ++ "tophat.png"),
+	save(Prewitt, ?OUT_DIR ++ "prewitt.png"),
+	save(Sobel, ?OUT_DIR ++ "sobel.png").
 
 testMenu() ->
 	io:format("\e[J"),
@@ -188,6 +200,7 @@ testMenu() ->
 	io:format("- 9) Bottom-Hat transformation            -~n"),
 	io:format("- 10) Prewitt gradient                    -~n"),
 	io:format("- 11) Roberts gradient                    -~n"),
+	io:format("- 12) Sobel gradient                    -~n"),
 	io:format("-------------------------------------------~n"),
 	Operation = io:get_line("Number> "),
 	case Operation of
@@ -256,6 +269,12 @@ testMenu() ->
 			Roberts = roberts(ErlImg),
 			save(Roberts, ?OUT_DIR ++ "roberts.png"),
 			io:format("Output file saved to: ~s !~n", [?OUT_DIR ++ "roberts.png"]);
+
+		"12\n" -> 
+			io:format("-          Roberts gradient               -~n"),
+			Sobel = sobel(ErlImg),
+			save(Sobel, ?OUT_DIR ++ "sobel.png"),
+			io:format("Output file saved to: ~s !~n", [?OUT_DIR ++ "sobel.png"]);
 		
 		_ -> io:format("-         Wrong operation!               -~n")
 	end,
