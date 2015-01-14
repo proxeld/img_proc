@@ -13,7 +13,7 @@ ebin/*
 out/
 #.*
 !/.gitignore
-*.iml
+#*.iml
 #java_client/\.idea/
 #java_server/\.idea/
 java_server/tmp/*
