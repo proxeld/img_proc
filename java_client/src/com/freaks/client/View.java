@@ -15,7 +15,9 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.Enumeration;
+import java.util.TimerTask;
 import java.util.logging.Logger;
+import java.util.Timer;
 
 /**
  * Created by proxeld on 09.01.15.
@@ -26,6 +28,7 @@ public class View extends JFrame {
     private Controller controller;
     private BufferedImage sourceImage;
     private BufferedImage processedImage;
+    private Timer progressBarTimer;
     private Logger guiLoger = Logger.getLogger("guiLogger");
 
     private JPanel rootPanel;
@@ -49,6 +52,8 @@ public class View extends JFrame {
     private JButton sobelButton;
     private JPanel buttonsPanel;
     private JButton robertsButton;
+    private JButton disconnectButton;
+    private JProgressBar progressBar;
 
     private JMenuBar menuBar;
     private JMenu fileMenu;
@@ -57,6 +62,7 @@ public class View extends JFrame {
     private JMenuItem saveFileMenuItem;
     private JMenuItem aboutMenuItem;
     private JFileChooser fileChooser;
+    private JPanel loadingPanel;
 
 
     /**
@@ -114,17 +120,38 @@ public class View extends JFrame {
                 }
 
                 String trimmed = file.getName().trim();
-                return trimmed.substring(trimmed.lastIndexOf(".")+1).toLowerCase().equals("png");
+                String extension = trimmed.substring(trimmed.lastIndexOf(".")+1).toLowerCase();
+                return extension.equals("png") || extension.equals("jpg") || extension.equals("jpeg") || extension.equals("bmp") ||
+                        extension.equals("gif");
             }
 
             @Override
             public String getDescription() {
-                return "PNG Images";
+                return "Images";
             }
         };
 
         fileChooser.setAcceptAllFileFilterUsed(false);
         fileChooser.setFileFilter(ff);
+
+        // loading pane;
+        ImageIcon loading = new ImageIcon("assets/ajax-loader.gif");
+        JLabel overlay = new JLabel("Processing...", loading, JLabel.CENTER);
+        overlay.setVerticalTextPosition(JLabel.BOTTOM);
+        overlay.setHorizontalTextPosition(JLabel.CENTER);
+        loadingPanel =  new JPanel() {
+            @Override
+            public void paintComponent(Graphics g) {
+                g.setColor(new Color(64, 64, 64, 128));
+                g.fillRect(0, 0, View.this.getWidth(), View.this.getHeight());
+            }
+        };
+        loadingPanel.setLayout(new BorderLayout());
+        loadingPanel.add(overlay);
+        this.setGlassPane(loadingPanel);
+
+        // progress bar
+        progressBarTimer = new Timer();
     }
 
     private void bindEvents() {
@@ -196,9 +223,22 @@ public class View extends JFrame {
             }
         });
 
+        disconnectButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        controller.onDisconnect();
+                    }
+                }).start();
+            }
+        });
+
         averageButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
+
                 setOperationsEnabled(false);
                 new Thread(new Runnable() {
                     @Override
@@ -210,6 +250,7 @@ public class View extends JFrame {
                             @Override
                             public void run() {
                                 setOperationsEnabled(true);
+                                hideLoadingPanel();
                             }
                         });
                     }
@@ -229,6 +270,7 @@ public class View extends JFrame {
                             @Override
                             public void run() {
                                 setOperationsEnabled(true);
+                                hideLoadingPanel();
                             }
                         });
                     }
@@ -248,6 +290,7 @@ public class View extends JFrame {
                             @Override
                             public void run() {
                                 setOperationsEnabled(true);
+                                hideLoadingPanel();
                             }
                         });
                     }
@@ -267,6 +310,7 @@ public class View extends JFrame {
                             @Override
                             public void run() {
                                 setOperationsEnabled(true);
+                                hideLoadingPanel();
                             }
                         });
                     }
@@ -286,6 +330,7 @@ public class View extends JFrame {
                             @Override
                             public void run() {
                                 setOperationsEnabled(true);
+                                hideLoadingPanel();
                             }
                         });
                     }
@@ -305,6 +350,7 @@ public class View extends JFrame {
                             @Override
                             public void run() {
                                 setOperationsEnabled(true);
+                                hideLoadingPanel();
                             }
                         });
                     }
@@ -324,6 +370,7 @@ public class View extends JFrame {
                             @Override
                             public void run() {
                                 setOperationsEnabled(true);
+                                hideLoadingPanel();
                             }
                         });
                     }
@@ -343,6 +390,7 @@ public class View extends JFrame {
                             @Override
                             public void run() {
                                 setOperationsEnabled(true);
+                                hideLoadingPanel();
                             }
                         });
                     }
@@ -362,6 +410,7 @@ public class View extends JFrame {
                             @Override
                             public void run() {
                                 setOperationsEnabled(true);
+                                hideLoadingPanel();
                             }
                         });
                     }
@@ -381,6 +430,7 @@ public class View extends JFrame {
                             @Override
                             public void run() {
                                 setOperationsEnabled(true);
+                                hideLoadingPanel();
                             }
                         });
                     }
@@ -400,6 +450,7 @@ public class View extends JFrame {
                             @Override
                             public void run() {
                                 setOperationsEnabled(true);
+                                hideLoadingPanel();
                             }
                         });
                     }
@@ -418,6 +469,7 @@ public class View extends JFrame {
                             @Override
                             public void run() {
                                 setOperationsEnabled(true);
+                                hideLoadingPanel();
                             }
                         });
                     }
@@ -437,6 +489,7 @@ public class View extends JFrame {
                             @Override
                             public void run() {
                                 setOperationsEnabled(true);
+                                hideLoadingPanel();
                             }
                         });
                     }
@@ -456,6 +509,7 @@ public class View extends JFrame {
                             @Override
                             public void run() {
                                 setOperationsEnabled(true);
+                                hideLoadingPanel();
                             }
                         });
                     }
@@ -467,23 +521,24 @@ public class View extends JFrame {
     private void createUIComponents() {
         sourceImagePanel = new JPanel();
         resultImagePanel = new JPanel();
-        connectButton = new JButton("d", new ImageIcon("assets/connect.gif"));
+        connectButton = new JButton("", new ImageIcon("assets/connect.gif"));
+        disconnectButton = new JButton("", new ImageIcon("assets/disconnect.gif"));
     }
 
-    void setProcessedImage(ImageIcon imageIcon) {
+    public void setProcessedImage(ImageIcon imageIcon) {
 
         BufferedImage bi = new BufferedImage(
                 imageIcon.getIconWidth(),
                 imageIcon.getIconHeight(),
                 BufferedImage.TYPE_BYTE_GRAY);
         Graphics g = bi.createGraphics();
-        imageIcon.paintIcon(null, g, 0,0);
+        imageIcon.paintIcon(null, g, 0, 0);
         g.dispose();
 
         processedImage = bi;
     }
 
-    void displayProcessedImage(ImageIcon imageIcon) {
+    public void displayProcessedImage(ImageIcon imageIcon) {
         JLabel picLabel = new JLabel(imageIcon);
 
         picLabel.setPreferredSize(new Dimension(512, 512));
@@ -495,7 +550,7 @@ public class View extends JFrame {
         resultImagePanel.revalidate();
     }
 
-    void setOperationsEnabled(boolean enabled) {
+    public void setOperationsEnabled(boolean enabled) {
         maxButton.setEnabled(enabled);
         minButton.setEnabled(enabled);
         averageButton.setEnabled(enabled);
@@ -512,16 +567,48 @@ public class View extends JFrame {
         sobelButton.setEnabled(enabled);
     }
 
-    void showInfoPopup(String msg) {
+    public void showLoadingPanel() {
+        getGlassPane().setVisible(true);
+    }
+
+    public void hideLoadingPanel() {
+        getGlassPane().setVisible(false);
+    }
+
+    public void showInfoPopup(String msg) {
         JOptionPane.showMessageDialog(View.this, msg);
     }
 
-    void showWarningPopup(String msg) {
+    public void showWarningPopup(String msg) {
         JOptionPane.showMessageDialog(View.this, msg, "Warning", JOptionPane.WARNING_MESSAGE);
     }
 
-    void showErrorPopup(String msg) {
+    public void showErrorPopup(String msg) {
         JOptionPane.showMessageDialog(View.this, msg, "Something went wrong...", JOptionPane.ERROR_MESSAGE);
+    }
+
+    public void fillConnectProgressBar() {
+        progressBarTimer = new Timer();
+        progressBar.setValue(0);
+
+        progressBarTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                progressBar.setValue(progressBar.getValue() + 1);
+                if (progressBar.getValue() > 100)
+                    this.cancel();
+            }
+        }, 0, 30);
+    }
+
+    public void fill100ProgressBar() {
+        progressBarTimer.cancel();
+        progressBar.setValue(100);
+    }
+
+    public void progressBarSetVisible(boolean visible) {
+
+        progressBar.setVisible(visible);
     }
 
     public void setController(Controller _controller) {

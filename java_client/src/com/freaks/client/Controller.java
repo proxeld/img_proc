@@ -37,7 +37,10 @@ public class Controller {
         }
 
         try {
+            view.progressBarSetVisible(true);
+            view.fillConnectProgressBar();
             erlangNodeClient.connect();
+            view.fill100ProgressBar();
             view.showInfoPopup("Successfully connected!");
             loopCheckServerStatus();
 
@@ -47,6 +50,27 @@ public class Controller {
             view.showErrorPopup("Cannot connect to server node... Maybe it is not running?");
         } catch (OtpAuthException e) {
             view.showInfoPopup("Connection refused by remote node. Check your setting (Setting.java).");
+        } finally {
+            view.fill100ProgressBar();
+            view.progressBarSetVisible(false);
+        }
+
+    }
+
+    public void onDisconnect() {
+        if(!erlangNodeClient.isConnected())
+            return;
+
+        view.progressBarSetVisible(true);
+        view.fillConnectProgressBar();
+        erlangNodeClient.disconnect();
+        view.fill100ProgressBar();
+        try {
+            Thread.currentThread().sleep(100);
+        } catch (InterruptedException e) {
+            // ignore, not important
+        } finally {
+            view.progressBarSetVisible(false);
         }
 
     }
@@ -73,6 +97,7 @@ public class Controller {
             return;
         }
 
+        view.showLoadingPanel();
         // MESSAGE STRUCTURE
         // OtpErlangTuple(sender: OtpErlangPid, image: OtpErlangBinary, operation: OtpErlangString)
 
