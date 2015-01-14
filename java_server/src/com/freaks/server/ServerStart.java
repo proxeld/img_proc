@@ -2,9 +2,6 @@ package com.freaks.server;
 
 import com.freaks.Settings;
 
-/**
- * Created by proxeld on 10.01.15.
- */
 public class ServerStart {
 
     public static void main(String[] argv) {

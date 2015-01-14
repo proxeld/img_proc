@@ -1,8 +1,5 @@
 package com.freaks;
 
-/**
- * Created by proxeld on 09.01.15.
- */
 public class Settings {
     public static final String JAVA_SERVER_NODE_NAME = "javaServerNode@localhost";
     public static final String JAVA_SERVER_COOKIE = "YcbYcr";

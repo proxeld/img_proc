@@ -13,9 +13,6 @@ import java.util.Date;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
-/**
- * Created by proxeld on 10.01.15.
- */
 public class NodeServer {
     private OtpNode self;
     private OtpMbox mbox;

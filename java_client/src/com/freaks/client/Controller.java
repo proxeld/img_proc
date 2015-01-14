@@ -11,9 +11,6 @@ import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
-/**
- * Created by proxeld on 10.01.15.
- */
 public class Controller {
     View view;
     NodeClient erlangNodeClient;

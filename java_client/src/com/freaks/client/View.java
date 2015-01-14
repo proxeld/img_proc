@@ -19,11 +19,6 @@ import java.util.TimerTask;
 import java.util.logging.Logger;
 import java.util.Timer;
 
-/**
- * Created by proxeld on 09.01.15.
- * Application view
- * @author proxeld
- */
 public class View extends JFrame {
     private Controller controller;
     private BufferedImage sourceImage;
