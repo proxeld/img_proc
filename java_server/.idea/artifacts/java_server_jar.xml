@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="java_server:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/java_server_jar</output-path>
+    <root id="archive" name="java_server.jar">
+      <element id="module-output" name="java_server" />
+      <element id="extracted-dir" path="/usr/lib/erlang/lib/jinterface-1.5.8/priv/OtpErlang.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

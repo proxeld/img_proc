@@ -11,7 +11,7 @@ rel/example_project
 deps/*
 ebin/*
 out/
-.*
+#.*
 !/.gitignore
 *.iml
 #java_client/\.idea/
